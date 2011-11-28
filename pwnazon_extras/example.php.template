@@ -1,0 +1,181 @@
+<?php
+/*
+ * This finds all jpegs in a directory (PICTURE_DIRECTORY) and creates
+ * an advert for each one. It will:
+ *  - resize
+ *  - convert to greyscale
+ *  - add a textbox at the bottom with a header and multiple lines of
+ *    smaller text (See HEADER and LINES)
+ */
+$sourcedirectory = 'PICTURE_DIRECTORY';
+$advertsdirectory = $argv[1];
+
+$sourcefilepaths = glob($sourcedirectory . '/*.{jpg,JPG}', GLOB_BRACE);
+foreach ($sourcefilepaths as $sourcefilepath) {
+    $sourcefilename = basename($sourcefilepath);
+    $advertdirectory = $advertsdirectory . '/' . $sourcefilename . '_advert';
+    if (!is_dir($advertdirectory)) {
+        create_advert($sourcedirectory . '/' . $sourcefilename, $advertdirectory);
+    }
+}
+
+function create_advert($sourcefilename, $advertdirectory) {
+    $header = 'HEADER';
+    $lines = explode("\n", 'LINES');
+    
+    $requiredwidth = 600;
+    $requiredheight = 800;
+
+    // find width and height of source
+    $imagesize = getimagesize($sourcefilename);
+    list($imagewidth, $imageheight) = $imagesize;
+
+    if ($imagesize) {
+        // load the image
+        $image = @imagecreatefromjpeg($sourcefilename);
+        
+        // find the rotation exif data, and rotate the image if necessary
+        $exif = exif_read_data($sourcefilename);
+        $ort = $exif['Orientation'];
+
+        // TODO: image flipping... see http://php.net/manual/en/function.imagecopy.php
+        switch($ort)
+        {
+            case 1: // nothing
+            break;
+
+            case 2: // horizontal flip
+                // TODO: $image->flipImage($image,1);
+            break;
+                                    
+            case 3: // 180 rotate left
+                $image = imagerotate($image, 180, 0);
+            break;
+                        
+            case 4: // vertical flip
+                // TODO: $image->flipImage($image,2);
+            break;
+                    
+            case 5: // vertical flip + 90 rotate right
+                // TODO: $image->flipImage($image, 2);
+                $image = imagerotate($image, -90, 0);
+
+                $temp = $imagewidth;
+                $imagewidth = $imageheight;
+                $imageheight = $temp;
+            break;
+                    
+            case 6: // 90 rotate right
+                $image = imagerotate($image, -90, 0);
+
+                $temp = $imagewidth;
+                $imagewidth = $imageheight;
+                $imageheight = $temp;
+            break;
+                    
+            case 7: // horizontal flip + 90 rotate right
+                // TODO: $image->flipImage($image,1);    
+                $image = imagerotate($image, -90, 0);
+
+                $temp = $imagewidth;
+                $imagewidth = $imageheight;
+                $imageheight = $temp;
+            break;
+                    
+            case 8:    // 90 rotate left
+                $image = imagerotate($image, 90, 0);
+
+                $temp = $imagewidth;
+                $imagewidth = $imageheight;
+                $imageheight = $temp;
+            break;
+        }
+
+        // find how much to scale by, preserving aspect ratio
+        $scalewidth = $requiredwidth / $imagewidth;
+        $scaleheight = $requiredheight / $imageheight;
+        $scale = min($scalewidth, $scaleheight);
+        $otherscale = max($scalewidth, $scaleheight);
+
+        // if we need to crop the original first, before scaling, this is required crop size
+        $cropwidth = $requiredwidth / $otherscale;
+        $cropheight = $requiredheight / $otherscale;
+
+        // crop
+        $cropped = imagecreatetruecolor($cropwidth, $cropheight);
+        imagecopy($cropped, $image, 0, 0, ($imagewidth - $cropwidth) / 2, ($imageheight - $cropheight) /2, $cropwidth, $cropheight);
+        imagedestroy($image);
+        $image = $cropped;
+
+        // resize
+        $resized = imagecreatetruecolor($requiredwidth, $requiredheight);
+        imagecopyresized($resized, $image, 0, 0, 0, 0, $requiredwidth, $requiredheight, $cropwidth, $cropheight);
+        imagedestroy($image);
+        $image = $resized;
+       
+        // convert to greyscale and brighten a little
+        imagefilter($image, IMG_FILTER_GRAYSCALE);
+        imagefilter($image, IMG_FILTER_BRIGHTNESS, 10);
+        
+        // text
+        $font = '/usr/share/fonts/truetype/freefont/FreeSans.ttf';
+        $headerfontsize = 18;
+        $fontsize = 12;
+        $headergap = 8;
+        $linegap = 4;
+
+        $headerdims = imagettfbbox($headerfontsize, 0, $font, $header);
+        $headerheight = $headerdims[1] - $headerdims[7];
+        $headerwidth = $headerdims[2] - $headerdims[0];
+        $maxwidth = $headerwidth;
+        $totalheight = (2 * $linegap) + $headerheight + $headergap;
+        for ($lineindex=0; $lineindex<count($lines); $lineindex++) {
+            $dims = imagettfbbox($fontsize, 0, $font, $lines[$lineindex]);
+            $linewidth = $dims[2] - $dims[0];
+            $maxwidth = max($maxwidth, $linewidth);
+            $totalheight += ($dims[1] - $dims[7]) + $linegap;
+        }
+        
+        $bgcolor = imagecolorallocate($image, 31, 31, 31);
+        $fontcolor = imagecolorallocate($image, 255, 255, 255);
+
+        // background first
+        $backgroundx1 = ($requiredwidth - $maxwidth)/2;
+        $backgroundy1 = ($requiredheight - $totalheight);
+        $backgroundx2 = $maxwidth + $backgroundx1;
+        $backgroundy2 = $requiredheight;
+        imagefilledrectangle($image, $backgroundx1 - $linegap, $backgroundy1 - $linegap, $backgroundx2 + $linegap, $backgroundy2 + $linegap, $bgcolor);
+        imagerectangle($image, $backgroundx1 - $linegap, $backgroundy1 - $linegap, $backgroundx2 + $linegap, $backgroundy2 + $linegap, $fontcolor);
+
+        $y = $requiredheight - $linegap;
+        for ($lineindex=count($lines)-1; $lineindex>=0; $lineindex--) {
+            // create a bounding box for the text
+            $dims = imagettfbbox($fontsize, 0, $font, $lines[$lineindex]);
+            $width = $dims[2] - $dims[0];
+            $height = $dims[1] - $dims[7];
+            $x = ($requiredwidth - $width) / 2; 
+            $y -= $linegap;
+
+            imagettftext($image, $fontsize, 0, $x, $y, $fontcolor, $font, $lines[$lineindex]);
+
+            $y -= $height;
+        }
+
+        {
+            $dims = imagettfbbox($headerfontsize, 0, $font, $header);
+            $width = $dims[2] - $dims[0];
+            $height = $dims[1] - $dims[7];
+            $x = ($requiredwidth - $width) / 2; 
+            $y -= $headergap;
+
+            imagettftext($image, $headerfontsize, 0, $x, $y, $fontcolor, $font, $header);
+        }
+
+        // create directory, write image
+        mkdir($advertdirectory);
+        imagepng($image, $advertdirectory . '/screensvr.png');
+
+        imagedestroy($image);
+    }
+}
+?>

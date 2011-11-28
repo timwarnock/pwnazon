@@ -1,0 +1,15 @@
+# Ignore anything in the temporary directory
+pwnazon_tmp/*
+# Except the dummy file, which is needed for git to maintain the temp directory
+!pwnazon_tmp/dummy
+
+# Ignore anything in the images directory
+pwnazon_images/*
+# Except the default stuff
+!pwnazon_images/default
+
+# Ignore everything in the extras directory
+pwnazon_extras/*
+# Except the example template
+!pwnazon_extras/example.php.template
+

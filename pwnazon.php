@@ -35,7 +35,7 @@ $adid = $_GET['adid'] or $adid = 1234567890123;
 $addir = $tempdir . $adid;
 mkdir($addir);
 #copy ad + other junk to ad directory
-$files = array('screensvr.gif', 'banner.gif', 'snippet.json', 'thumb.gif', 'details.xml');
+$files = array('screensvr.png', 'banner.gif', 'snippet.json', 'thumb.gif', 'details.html');
 foreach($files as $filename) {
     if(file_exists($imagepath . $filename)) {
         copy($imagepath . $filename, $addir . '/' . $filename);
@@ -45,7 +45,7 @@ foreach($files as $filename) {
     }
 }
 #Create ad manifest
-$admanifest = '{"encoding":"ad-units-package-1.0","ad-units":[{"assets":[{"filename":"screensvr.gif","creative-id":"4990767082435","checksum":"' . md5_file($addir . '/screensvr.gif') . '"},{"filename":"details.xml","creative-id":"7097082962289","checksum":"' . md5_file($addir . '/details.xml') . '"},{"filename":"banner.gif","creative-id":"8908001221594","checksum":"' . md5_file($addir . '/banner.gif') . '"},{"filename":"thumb.gif","creative-id":"3674714958127","checksum":"' . md5_file($addir . '/thumb.gif') . '"},{"filename":"snippet.json","creative-id":"3674714958127","checksum":"' . md5_file($addir . '/snippet.json') . '"}],"ad-type":"AD","start":"' . date('r') . '","priority":100,"remove-after":"' . date('r',strtotime('+1 day')) . '","ad-id":"' . $adid . '","end":"' . date('r',strtotime('+1 day')) . '","version":20111019203526}]}';
+$admanifest = '{"encoding":"ad-units-package-3.0","ad-units":[{"assets":[{"filename":"screensvr.png","creative-id":"4990767082435","checksum":"' . md5_file($addir . '/screensvr.png') . '"},{"filename":"details.html","creative-id":"7097082962289","checksum":"' . md5_file($addir . '/details.html') . '"},{"filename":"banner.gif","creative-id":"8908001221594","checksum":"' . md5_file($addir . '/banner.gif') . '"},{"filename":"thumb.gif","creative-id":"3674714958127","checksum":"' . md5_file($addir . '/thumb.gif') . '"},{"filename":"snippet.json","creative-id":"3674714958127","checksum":"' . md5_file($addir . '/snippet.json') . '"}],"ad-type":"AD","start":"' . date('r') . '","priority":100,"remove-after":"' . date('r',strtotime('+1 day')) . '","ad-id":"' . $adid . '","end":"' . date('r',strtotime('+1 day')) . '","version":20111019203526}]}';
 $admanifest = str_replace('-0400','GMT',$admanifest);
 $admanifestfile = fopen($tempdir . 'ad-manifest.json', 'w');
 fwrite($admanifestfile, $admanifest);
