@@ -1,5 +1,8 @@
 pwnazon
-======= Fake ad server for your "Amazon Kindle with Special Offers" Requirements
+=======
+Fake ad server for your "Amazon Kindle with Special Offers"
+
+Requirements
 ------------
 * Kindle with Special Offers
 * Preferably non-3G (otherwise it'll use the 3G connection to download regular ads)
@@ -12,6 +15,7 @@ DNS Hack Methods
 The original author suggested adding a static entry to the DNS table in your router - but not all routers support that type of configuration.
 
 Other options would be:
+
 1.  Use something like [ettercap][1] to perform DNS Spoofing in your local network... this intercepts individual DNS requests and returns bogus responses
 2.  Install a DNS proxy (such as [Dnsmasq][2]), and configure your Kindle to use that DNS instead of the default provided by your wireless router. (Hint: when you configure the WiFi network, choose static IP)  This is the method that I use.
 
@@ -30,7 +34,7 @@ Hints
 History
 -------
 
-[pwnazon][333was originally written by Michael Shepard.
+[pwnazon][3] was originally written by Michael Shepard.
 
 Original README follows:
 
